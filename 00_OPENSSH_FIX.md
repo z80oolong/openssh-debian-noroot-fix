@@ -8,7 +8,7 @@
 
 ## 差分ファイルの適用とコンパイル
 
-[OpenSSH][OSSH] のソースコードに差分ファイルを適用するには、安定版の [OpenSSH][OSSH] には、差分ファイル ```openssh-x.ypz-fix.diff (ここに、 x.y は安定版のバージョン番号であり、 pz はパッチレベル番号)``` を、[開発版の OpenSSH][OPRP] には、差分ファイル ```openssh-HEAD-xxxxxxxx-fix.diff (ここに、 xxxxxxxx は、リビジョン番号)``` をそれぞれ適用して下さい。
+[OpenSSH][OSSH] のソースコードに差分ファイルを適用するには、安定版の [OpenSSH][OSSH] には、差分ファイル ```openssh-x.ypz-fix.diff (ここに、 x.y は安定版のバージョン番号であり、 pz はパッチレベル番号)``` を、[開発版の OpenSSH][OPRP] には、差分ファイル ```openssh-HEAD-xxxxxxxx-fix.diff (ここに、 xxxxxxxx は、HEAD の commit ID 番号)``` をそれぞれ適用して下さい。
 
 例えば、安定版の [OpenSSH][OSSH] のソースコードに ```openssh-x.ypz-fix.diff``` を適用するには、安定版の [OpenSSH][OSSH] のソースコードが置かれているディレクトリより、以下のようにして差分ファイル ```openssh-x.y-fix.diff``` を適用します。
 
@@ -32,6 +32,10 @@
 ## 謝辞
 
 なお、これらの差分ファイルの作成に当たっては、 [termux の開発コミュニティ][TERM] による差分ファイルを参考にしました。 [termux の開発コミュニティ][TERM]の皆様には心より感謝致します。
+
+### 2019/03/19 の追記
+
+[開発版の OpenSSH][OPRP] の HEAD の commit である 9edbd782 に対応した差分ファイル ```dropbear-HEAD-9edbd782-fix.diff``` を追加しました。これに伴い、差分ファイル ```openssh-7.8p1-fix.diff, openssh-HEAD-aede1c34-fix.diff```を削除しました。どうか御了承下さい。
 
 <!-- 外部リンク一覧 -->
 

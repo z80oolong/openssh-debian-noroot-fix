@@ -1,5 +1,5 @@
 diff --git a/loginrec.c b/loginrec.c
-index 9a427de..347cd6d 100644
+index 5f2a4779..2a8704de 100644
 --- a/loginrec.c
 +++ b/loginrec.c
 @@ -436,6 +436,9 @@ login_set_addr(struct logininfo *li, const struct sockaddr *sa,
@@ -13,10 +13,10 @@ index 9a427de..347cd6d 100644
  	if (geteuid() != 0) {
  		logit("Attempt to write login records by non-root user (aborting)");
 diff --git a/mux.c b/mux.c
-index e607acd..fbe7987 100644
+index e89db193..b99e47ed 100644
 --- a/mux.c
 +++ b/mux.c
-@@ -1342,6 +1342,22 @@ muxserver_listen(struct ssh *ssh)
+@@ -1340,6 +1340,22 @@ muxserver_listen(struct ssh *ssh)
  	}
  
  	/* Now atomically "move" the mux socket into position */
@@ -39,7 +39,7 @@ index e607acd..fbe7987 100644
  	if (link(options.control_path, orig_control_path) != 0) {
  		if (errno != EEXIST) {
  			fatal("%s: link mux listener %s => %s: %s", __func__,
-@@ -1354,6 +1370,7 @@ muxserver_listen(struct ssh *ssh)
+@@ -1352,6 +1368,7 @@ muxserver_listen(struct ssh *ssh)
  		goto disable_mux_master;
  	}
  	unlink(options.control_path);
@@ -48,10 +48,10 @@ index e607acd..fbe7987 100644
  	options.control_path = orig_control_path;
  
 diff --git a/servconf.c b/servconf.c
-index c0f6af0..8c7613c 100644
+index a7bfba82..4dc5a188 100644
 --- a/servconf.c
 +++ b/servconf.c
-@@ -278,7 +278,11 @@ fill_default_server_options(ServerOptions *options)
+@@ -296,7 +296,11 @@ fill_default_server_options(ServerOptions *options)
  	}
  	/* No certificates by default */
  	if (options->num_ports == 0)
@@ -63,7 +63,7 @@ index c0f6af0..8c7613c 100644
  	if (options->address_family == -1)
  		options->address_family = AF_UNSPEC;
  	if (options->listen_addrs == NULL)
-@@ -410,9 +414,13 @@ fill_default_server_options(ServerOptions *options)
+@@ -428,9 +432,13 @@ fill_default_server_options(ServerOptions *options)
  
  	assemble_algorithms(options);
  
@@ -78,7 +78,7 @@ index c0f6af0..8c7613c 100644
  
  #define CLEAR_ON_NONE(v) \
  	do { \
-@@ -834,7 +842,11 @@ process_queued_listen_addrs(ServerOptions *options)
+@@ -853,7 +861,11 @@ process_queued_listen_addrs(ServerOptions *options)
  	struct queued_listenaddr *qla;
  
  	if (options->num_ports == 0)
@@ -91,10 +91,10 @@ index c0f6af0..8c7613c 100644
  		options->address_family = AF_UNSPEC;
  
 diff --git a/sshd_config.5 b/sshd_config.5
-index e1b54ba..de88a9e 100644
+index 142f84a1..4eb837ab 100644
 --- a/sshd_config.5
 +++ b/sshd_config.5
-@@ -1361,7 +1361,7 @@ The default is
+@@ -1372,7 +1372,7 @@ The default is
  Specifies the port number that
  .Xr sshd 8
  listens on.
@@ -104,7 +104,7 @@ index e1b54ba..de88a9e 100644
  See also
  .Cm ListenAddress .
 diff --git a/sshpty.c b/sshpty.c
-index 4da84d0..af850da 100644
+index 4da84d05..af850da5 100644
 --- a/sshpty.c
 +++ b/sshpty.c
 @@ -85,7 +85,7 @@ pty_allocate(int *ptyfd, int *ttyfd, char *namebuf, size_t namebuflen)
