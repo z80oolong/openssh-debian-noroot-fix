@@ -90,6 +90,67 @@ index 932d363..4a2cc4e 100644
  	if (options->address_family == -1)
  		options->address_family = AF_UNSPEC;
  
+diff --git a/sftp-server.c b/sftp-server.c
+index ab1b063..58eed75 100644
+--- a/sftp-server.c
++++ b/sftp-server.c
+@@ -51,6 +51,17 @@
+ #include "sftp.h"
+ #include "sftp-common.h"
+ 
++/* Fix to allow SSH2_FXP_READDIR to hide files with given prefix ".l2s." or ".proot". */
++#ifdef DEBIAN_NOROOT
++/* Change the HIDDEN_PREFIX to change which files are hidden */
++#ifdef USERLAND
++#define HIDDEN_PREFIX ".proot"
++#endif
++#ifndef USERLAND
++#define HIDDEN_PREFIX ".l2s."
++#endif
++#endif
++
+ /* Our verbosity */
+ static LogLevel log_level = SYSLOG_LEVEL_ERROR;
+ 
+@@ -151,6 +162,26 @@ struct sftp_handler extended_handlers[] = {
+ 	{ NULL, NULL, 0, NULL, 0 }
+ };
+ 
++#ifdef DEBIAN_NOROOT
++/*
++ * Compares the given prefix with the given string.
++ * If str has the given prefix, return 1. Otherwise
++ * return 0
++ */
++static int
++has_prefix(char *prefix, char *str) {
++	while (*prefix && *str && (*(prefix) == *(str))) {
++		prefix++;
++		str++;
++	}
++
++	/* If there is not any prefix left after stepping
++	 * through the strings, then it matches */
++	if (!(*prefix)) { return 1; }
++	return 0;
++}
++#endif
++
+ static int
+ request_permitted(struct sftp_handler *h)
+ {
+@@ -1056,6 +1087,11 @@ process_readdir(u_int32_t id)
+ 
+ 		stats = xcalloc(nstats, sizeof(Stat));
+ 		while ((dp = readdir(dirp)) != NULL) {
++/* Fix to allow SSH2_FXP_READDIR to hide files with given prefix ".l2s." or ".proot". */
++#ifdef DEBIAN_NOROOT
++			if (has_prefix(HIDDEN_PREFIX, dp->d_name))
++				continue;
++#endif
+ 			if (count >= nstats) {
+ 				nstats *= 2;
+ 				stats = xreallocarray(stats, nstats, sizeof(Stat));
 diff --git a/sshd_config.5 b/sshd_config.5
 index c648437..ee2dadc 100644
 --- a/sshd_config.5
