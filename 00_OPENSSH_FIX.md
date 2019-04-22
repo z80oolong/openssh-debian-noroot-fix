@@ -45,6 +45,10 @@
 
 また、これに伴い、差分ファイル ```openssh-7.9p1-fix.diff, openssh-HEAD-9edbd782-fix.diff``` を削除しました。どうか御了承下さい。
 
+### 2019/04/22 の追記
+
+最新の安定版である [OpenSSH 8.0p1][OSSH] に対応した差分ファイル ```openssh-8.0p1-fix.diff``` を追加しました。これに伴い、差分ファイル ```openssh-7.9p1_1-fix.diff```を削除しました。どうか御了承下さい。
+
 <!-- 外部リンク一覧 -->
 
 [DBNR]:https://play.google.com/store/apps/details?id=com.cuntubuntu&hl=ja

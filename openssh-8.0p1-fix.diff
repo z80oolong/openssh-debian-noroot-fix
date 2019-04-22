@@ -1,5 +1,5 @@
 diff --git a/loginrec.c b/loginrec.c
-index 9a427de..347cd6d 100644
+index 5f2a477..2a8704d 100644
 --- a/loginrec.c
 +++ b/loginrec.c
 @@ -436,6 +436,9 @@ login_set_addr(struct logininfo *li, const struct sockaddr *sa,
@@ -13,10 +13,10 @@ index 9a427de..347cd6d 100644
  	if (geteuid() != 0) {
  		logit("Attempt to write login records by non-root user (aborting)");
 diff --git a/mux.c b/mux.c
-index 8e4b608..05f515b 100644
+index e89db19..b99e47e 100644
 --- a/mux.c
 +++ b/mux.c
-@@ -1331,6 +1331,22 @@ muxserver_listen(struct ssh *ssh)
+@@ -1340,6 +1340,22 @@ muxserver_listen(struct ssh *ssh)
  	}
  
  	/* Now atomically "move" the mux socket into position */
@@ -39,7 +39,7 @@ index 8e4b608..05f515b 100644
  	if (link(options.control_path, orig_control_path) != 0) {
  		if (errno != EEXIST) {
  			fatal("%s: link mux listener %s => %s: %s", __func__,
-@@ -1343,6 +1359,7 @@ muxserver_listen(struct ssh *ssh)
+@@ -1352,6 +1368,7 @@ muxserver_listen(struct ssh *ssh)
  		goto disable_mux_master;
  	}
  	unlink(options.control_path);
@@ -48,10 +48,10 @@ index 8e4b608..05f515b 100644
  	options.control_path = orig_control_path;
  
 diff --git a/servconf.c b/servconf.c
-index 932d363..4a2cc4e 100644
+index ffac5d2..44e3b3a 100644
 --- a/servconf.c
 +++ b/servconf.c
-@@ -282,7 +282,11 @@ fill_default_server_options(ServerOptions *options)
+@@ -296,7 +296,11 @@ fill_default_server_options(ServerOptions *options)
  	}
  	/* No certificates by default */
  	if (options->num_ports == 0)
@@ -63,7 +63,7 @@ index 932d363..4a2cc4e 100644
  	if (options->address_family == -1)
  		options->address_family = AF_UNSPEC;
  	if (options->listen_addrs == NULL)
-@@ -414,9 +418,13 @@ fill_default_server_options(ServerOptions *options)
+@@ -428,9 +432,13 @@ fill_default_server_options(ServerOptions *options)
  
  	assemble_algorithms(options);
  
@@ -78,7 +78,7 @@ index 932d363..4a2cc4e 100644
  
  #define CLEAR_ON_NONE(v) \
  	do { \
-@@ -839,7 +847,11 @@ process_queued_listen_addrs(ServerOptions *options)
+@@ -852,7 +860,11 @@ process_queued_listen_addrs(ServerOptions *options)
  	struct queued_listenaddr *qla;
  
  	if (options->num_ports == 0)
@@ -91,7 +91,7 @@ index 932d363..4a2cc4e 100644
  		options->address_family = AF_UNSPEC;
  
 diff --git a/sftp-server.c b/sftp-server.c
-index ab1b063..58eed75 100644
+index 19a132b..d82a5cc 100644
 --- a/sftp-server.c
 +++ b/sftp-server.c
 @@ -51,6 +51,17 @@
@@ -112,7 +112,7 @@ index ab1b063..58eed75 100644
  /* Our verbosity */
  static LogLevel log_level = SYSLOG_LEVEL_ERROR;
  
-@@ -151,6 +162,26 @@ struct sftp_handler extended_handlers[] = {
+@@ -153,6 +164,26 @@ static const struct sftp_handler extended_handlers[] = {
  	{ NULL, NULL, 0, NULL, 0 }
  };
  
@@ -137,9 +137,9 @@ index ab1b063..58eed75 100644
 +#endif
 +
  static int
- request_permitted(struct sftp_handler *h)
+ request_permitted(const struct sftp_handler *h)
  {
-@@ -1056,6 +1087,11 @@ process_readdir(u_int32_t id)
+@@ -1072,6 +1103,11 @@ process_readdir(u_int32_t id)
  
  		stats = xcalloc(nstats, sizeof(Stat));
  		while ((dp = readdir(dirp)) != NULL) {
@@ -152,7 +152,7 @@ index ab1b063..58eed75 100644
  				nstats *= 2;
  				stats = xreallocarray(stats, nstats, sizeof(Stat));
 diff --git a/sshd_config.5 b/sshd_config.5
-index c648437..ee2dadc 100644
+index b224f29..ff76dec 100644
 --- a/sshd_config.5
 +++ b/sshd_config.5
 @@ -1372,7 +1372,7 @@ The default is
