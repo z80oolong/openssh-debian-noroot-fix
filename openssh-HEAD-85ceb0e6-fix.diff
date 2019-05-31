@@ -1,0 +1,205 @@
+diff --git a/loginrec.c b/loginrec.c
+index 5f2a4779..2a8704de 100644
+--- a/loginrec.c
++++ b/loginrec.c
+@@ -436,6 +436,9 @@ login_set_addr(struct logininfo *li, const struct sockaddr *sa,
+ int
+ login_write(struct logininfo *li)
+ {
++#ifdef DEBIAN_NOROOT
++	return 1;
++#endif
+ #ifndef HAVE_CYGWIN
+ 	if (geteuid() != 0) {
+ 		logit("Attempt to write login records by non-root user (aborting)");
+diff --git a/mux.c b/mux.c
+index e89db193..b99e47ed 100644
+--- a/mux.c
++++ b/mux.c
+@@ -1340,6 +1340,22 @@ muxserver_listen(struct ssh *ssh)
+ 	}
+ 
+ 	/* Now atomically "move" the mux socket into position */
++#ifdef DEBIAN_NOROOT
++	/* Android does not support hard links, so use a non-atomic
++	   check-then-rename for now. */
++	if (access(orig_control_path, F_OK) == 0) {
++		error("ControlSocket %s already exists, disabling multiplexing",
++		    orig_control_path);
++		unlink(options.control_path);
++		goto disable_mux_master;
++	} else {
++		if (rename(options.control_path, orig_control_path) == -1) {
++			fatal("%s: link mux listener %s => %s: %s", __func__, 
++			    options.control_path, orig_control_path,
++			    strerror(errno));
++		}
++	}
++#else
+ 	if (link(options.control_path, orig_control_path) != 0) {
+ 		if (errno != EEXIST) {
+ 			fatal("%s: link mux listener %s => %s: %s", __func__,
+@@ -1352,6 +1368,7 @@ muxserver_listen(struct ssh *ssh)
+ 		goto disable_mux_master;
+ 	}
+ 	unlink(options.control_path);
++#endif
+ 	free(options.control_path);
+ 	options.control_path = orig_control_path;
+ 
+diff --git a/servconf.c b/servconf.c
+index 340045b2..3f6e7746 100644
+--- a/servconf.c
++++ b/servconf.c
+@@ -296,7 +296,11 @@ fill_default_server_options(ServerOptions *options)
+ 	}
+ 	/* No certificates by default */
+ 	if (options->num_ports == 0)
++#ifdef DEBIAN_NOROOT
++		options->ports[options->num_ports++] = 8022 /*SSH_DEFAULT_PORT*/;
++#else
+ 		options->ports[options->num_ports++] = SSH_DEFAULT_PORT;
++#endif
+ 	if (options->address_family == -1)
+ 		options->address_family = AF_UNSPEC;
+ 	if (options->listen_addrs == NULL)
+@@ -428,9 +432,13 @@ fill_default_server_options(ServerOptions *options)
+ 
+ 	assemble_algorithms(options);
+ 
+-	/* Turn privilege separation and sandboxing on by default */
+ 	if (use_privsep == -1)
++#ifdef DEBIAN_NOROOT
++		use_privsep = PRIVSEP_OFF;
++#else
++		/* Turn privilege separation and sandboxing on by default */
+ 		use_privsep = PRIVSEP_ON;
++#endif
+ 
+ #define CLEAR_ON_NONE(v) \
+ 	do { \
+@@ -852,7 +860,11 @@ process_queued_listen_addrs(ServerOptions *options)
+ 	struct queued_listenaddr *qla;
+ 
+ 	if (options->num_ports == 0)
++#ifdef DEBIAN_NOROOT
++		options->ports[options->num_ports++] = 8022 /*SSH_DEFAULT_PORT*/;
++#else
+ 		options->ports[options->num_ports++] = SSH_DEFAULT_PORT;
++#endif
+ 	if (options->address_family == -1)
+ 		options->address_family = AF_UNSPEC;
+ 
+diff --git a/sftp-server.c b/sftp-server.c
+index 19a132bd..d82a5ccf 100644
+--- a/sftp-server.c
++++ b/sftp-server.c
+@@ -51,6 +51,17 @@
+ #include "sftp.h"
+ #include "sftp-common.h"
+ 
++/* Fix to allow SSH2_FXP_READDIR to hide files with given prefix ".l2s." or ".proot". */
++#ifdef DEBIAN_NOROOT
++/* Change the HIDDEN_PREFIX to change which files are hidden */
++#ifdef USERLAND
++#define HIDDEN_PREFIX ".proot"
++#endif
++#ifndef USERLAND
++#define HIDDEN_PREFIX ".l2s."
++#endif
++#endif
++
+ /* Our verbosity */
+ static LogLevel log_level = SYSLOG_LEVEL_ERROR;
+ 
+@@ -153,6 +164,26 @@ static const struct sftp_handler extended_handlers[] = {
+ 	{ NULL, NULL, 0, NULL, 0 }
+ };
+ 
++#ifdef DEBIAN_NOROOT
++/*
++ * Compares the given prefix with the given string.
++ * If str has the given prefix, return 1. Otherwise
++ * return 0
++ */
++static int
++has_prefix(char *prefix, char *str) {
++	while (*prefix && *str && (*(prefix) == *(str))) {
++		prefix++;
++		str++;
++	}
++
++	/* If there is not any prefix left after stepping
++	 * through the strings, then it matches */
++	if (!(*prefix)) { return 1; }
++	return 0;
++}
++#endif
++
+ static int
+ request_permitted(const struct sftp_handler *h)
+ {
+@@ -1072,6 +1103,11 @@ process_readdir(u_int32_t id)
+ 
+ 		stats = xcalloc(nstats, sizeof(Stat));
+ 		while ((dp = readdir(dirp)) != NULL) {
++/* Fix to allow SSH2_FXP_READDIR to hide files with given prefix ".l2s." or ".proot". */
++#ifdef DEBIAN_NOROOT
++			if (has_prefix(HIDDEN_PREFIX, dp->d_name))
++				continue;
++#endif
+ 			if (count >= nstats) {
+ 				nstats *= 2;
+ 				stats = xreallocarray(stats, nstats, sizeof(Stat));
+diff --git a/sshd_config.5 b/sshd_config.5
+index 9f59584f..15c6175a 100644
+--- a/sshd_config.5
++++ b/sshd_config.5
+@@ -1370,7 +1370,7 @@ The default is
+ Specifies the port number that
+ .Xr sshd 8
+ listens on.
+-The default is 22.
++The default is 8022.
+ Multiple options of this type are permitted.
+ See also
+ .Cm ListenAddress .
+diff --git a/sshpty.c b/sshpty.c
+index 4da84d05..af850da5 100644
+--- a/sshpty.c
++++ b/sshpty.c
+@@ -85,7 +85,7 @@ pty_allocate(int *ptyfd, int *ttyfd, char *namebuf, size_t namebuflen)
+ void
+ pty_release(const char *tty)
+ {
+-#if !defined(__APPLE_PRIVPTY__) && !defined(HAVE_OPENPTY)
++#if !defined(__APPLE_PRIVPTY__) && !defined(HAVE_OPENPTY) && !defined(DEBIAN_NOROOT)
+ 	if (chown(tty, (uid_t) 0, (gid_t) 0) < 0)
+ 		error("chown %.100s 0 0 failed: %.100s", tty, strerror(errno));
+ 	if (chmod(tty, (mode_t) 0666) < 0)
+@@ -187,6 +187,7 @@ pty_setowner(struct passwd *pw, const char *tty)
+ 	ssh_selinux_setup_pty(pw->pw_name, tty);
+ #endif
+ 
++#ifndef DEBIAN_NOROOT
+ 	if (st.st_uid != pw->pw_uid || st.st_gid != gid) {
+ 		if (chown(tty, pw->pw_uid, gid) < 0) {
+ 			if (errno == EROFS &&
+@@ -200,7 +201,9 @@ pty_setowner(struct passwd *pw, const char *tty)
+ 				    strerror(errno));
+ 		}
+ 	}
++#endif
+ 
++#ifndef DEBIAN_NOROOT
+ 	if ((st.st_mode & (S_IRWXU|S_IRWXG|S_IRWXO)) != mode) {
+ 		if (chmod(tty, mode) < 0) {
+ 			if (errno == EROFS &&
+@@ -212,6 +215,7 @@ pty_setowner(struct passwd *pw, const char *tty)
+ 				    tty, (u_int)mode, strerror(errno));
+ 		}
+ 	}
++#endif
+ }
+ 
+ /* Disconnect from the controlling tty. */
